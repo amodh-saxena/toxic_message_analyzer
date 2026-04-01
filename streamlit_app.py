@@ -6,13 +6,7 @@ from datetime import datetime
 import json
 import torch
 
-# Import existing logic
-from backend.services.toxicity_service import toxicity_analyzer
-from backend.services.rephraser_service import rephraser
-from backend.db import SessionLocal, init_db
-from backend.models import Message
-
-# Page Configuration
+# IMPORTANT: set_page_config MUST be the first Streamlit command
 st.set_page_config(
     page_title="Toxic Message Analyzer | Pro-Grade",
     page_icon="🛡️",
@@ -20,8 +14,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Premium Aesthetic
-st.markdown("""
+# Import existing logic (after config)
+from backend.services.toxicity_service import toxicity_analyzer
+from backend.services.rephraser_service import rephraser
+from backend.db import SessionLocal, init_db
+from backend.models import Message
+
+# Custom UI Styling (Refactored for Stability)
+CSS_THEME = """
 <style>
     .main { background-color: #f8fafc; }
     .stButton>button {
@@ -32,6 +32,12 @@ st.markdown("""
         color: white;
         font-weight: bold;
         border: none;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #4338ca;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     }
     .stTextArea>div>div>textarea {
         border-radius: 15px;
@@ -43,6 +49,7 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         background-color: white;
         margin-bottom: 20px;
+        box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
     }
     .expert-box {
         padding: 20px;
@@ -52,173 +59,147 @@ st.markdown("""
         color: #1e40af;
         font-style: italic;
     }
-    .severity-badge {
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-weight: 800;
-        font-size: 0.8rem;
-        text-transform: uppercase;
+    [data-testid="stSidebar"] {
+        background-color: white;
+        border-right: 1px solid #e2e8f0;
     }
 </style>
-""", unsafe_allow_all_html=True)
+"""
+st.markdown(CSS_THEME, unsafe_allow_all_html=True)
 
-# Cache Models
+# Cache Models for Cloud Performance
 @st.cache_resource
 def load_models():
     toxicity_analyzer.load_model()
-    # Rephraser loads on init
     return toxicity_analyzer, rephraser
 
 tox_engine, rephrase_engine = load_models()
 init_db()
 
-# Sidebar: Strategic Guide
+# Sidebar Content
 with st.sidebar:
-    st.title("🛡️ Analyzer Intelligence")
+    st.title("🛡️ Analyzer Logic")
     st.markdown("### Strategic Guide: 7 Tiers")
     
     tiers = [
-        {"name": "Tier 1: Healthy", "range": "0-15%", "strategy": "Everything looks great. The AI will preserve your professional tone while ensuring clarity."},
-        {"name": "Tier 2: Low-Risk", "range: ": "15-30%", "strategy": "Minor polishing applied. Softening subtle edges for better recipient reception."},
-        {"name": "Tier 3: Noticeable", "range": "30-45%", "strategy": "Diplomacy mode active. Identifying and neutralizing passive-aggressive indicators."},
-        {"name": "Tier 4: Moderate", "range": "45-60%", "strategy": "Construction mode. Rebuilding direct critiques into constructive, project-focused feedback."},
-        {"name": "Tier 5: High Risk", "range": "60-75%", "strategy": "Restorative shift. Transforming hostile intent into collaborative, supportive guidance."},
-        {"name": "Tier 6: Severe", "range": "75-90%", "strategy": "Deep De-escalation. Implementing extreme professional grace for severe interpersonal friction."},
-        {"name": "Tier 7: Critical", "range": "90-100%", "strategy": "Masterful Restoration. Full neutralization of extreme hostility into sincere cooperation."}
+        {"name": "Tier 1: Healthy", "range": "0-15%", "strategy": "Maintain professional clarity and support."},
+        {"name": "Tier 2: Low-Risk", "range": "15-30%", "strategy": "Minor polishing for subtle phrasing refinement."},
+        {"name": "Tier 3: Noticeable", "range": "30-45%", "strategy": "Diplomacy active. Neutralizing passive-aggression."},
+        {"name": "Tier 4: Moderate", "range": "45-60%", "strategy": "Construction mode. Rebuilding direct critiques."},
+        {"name": "Tier 5: High Risk", "range": "60-75%", "strategy": "Restorative shift. Transforming hostile intent."},
+        {"name": "Tier 6: Severe", "range": "75-90%", "strategy": "Deep De-escalation and professional grace."},
+        {"name": "Tier 7: Critical", "range": "90-100%", "strategy": "Full Masterful Restoration and cooperation."}
     ]
     
     for tier in tiers:
-        with st.expander(f"{tier['name']} ({tier['range']})"):
+        with st.expander(f"{tier['name']}"):
+            st.caption(f"Range: {tier['range']}")
             st.write(tier['strategy'])
 
     st.divider()
-    st.caption("Powered by 7-Tier Analytical Engine v2.8")
+    st.caption("7-Tier Analytical Engine v2.8")
 
-# Main Header
+# Main Application Layout
 st.title("Toxic Message Analyzer")
 st.subheader("Pro-Grade 7-Tier Severity Engine & Restorative AI Strategy")
 
-# Informatics Row
+# Informatics Dashboard
 db = SessionLocal()
 history = db.query(Message).all()
 db.close()
 
-col1, col2, col3 = st.columns(3)
-with col1:
+stat_col1, stat_col2, stat_col3 = st.columns(3)
+with stat_col1:
     st.metric("Total Scanned", len(history))
-with col2:
-    high_risk = len([m for m in history if m.toxicity_score > 0.75])
-    st.metric("High Risk Alerts", high_risk, delta=None, delta_color="inverse")
-with col3:
-    avg_tox = (sum([m.toxicity_score for m in history]) / len(history) * 100) if history else 0
-    st.metric("Avg Severity", f"{avg_tox:.1f}%")
+with stat_col2:
+    high_risk_count = len([m for m in history if m.toxicity_score > 0.75])
+    st.metric("High Risk Alerts", high_risk_count)
+with stat_col3:
+    avg_score = (sum([m.toxicity_score for m in history]) / len(history) * 100) if history else 0
+    st.metric("Avg Severity", f"{avg_score:.1f}%")
 
-# Input Section
-user_input = st.text_area("Input Feedback Analysis", placeholder="Paste your feedback here for restorative professional rephrasing...", height=150)
-analyze_btn = st.button("Execute Analysis")
+# Main Input Interface
+user_input = st.text_area("Analyze Feedback", placeholder="Paste professional feedback here to begin restorative rephrasing...", height=150)
+if st.button("Execute Intelligence Analysis"):
+    if user_input:
+        with st.spinner("Calibrating Cloud Models..."):
+            score, label, segmentation = tox_engine.predict(user_input)
+            rephrased = rephrase_engine.rephrase(user_input, score=score)
+            tier_data = rephrase_engine.get_tier_key(score)
+            benchmark = rephrase_engine.examples[tier_data]["output"]
+            
+            # Persist Result
+            db = SessionLocal()
+            db.add(Message(
+                user_input=user_input,
+                toxicity_score=score,
+                prediction_label=label,
+                rephrased_output=rephrased,
+                segmentation_scores=json.dumps(segmentation)
+            ))
+            db.commit()
+            db.close()
+            
+            # Display Real-time Results
+            r_col1, r_col2 = st.columns([1, 1.5])
+            
+            with r_col1:
+                st.markdown("### Intensity Segmentation")
+                score_color = "#ef4444" if score > 0.6 else "#4f46e5"
+                st.markdown(f"<div style='text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white;'><strong>Toxicity Intensity</strong><h1 style='color: {score_color}; font-size: 3rem; margin: 0;'>{(score*100):.0f}%</h1></div>", unsafe_allow_all_html=True)
+                
+                radar_data = pd.DataFrame({
+                    'Metric': [k.replace('_', ' ').upper() for k in segmentation.keys()],
+                    'Value': [v * 100 for v in segmentation.values()]
+                })
+                fig = px.line_polar(radar_data, r='Value', theta='Metric', line_close=True)
+                fig.update_traces(fill='toself', line_color='#4f46e5')
+                fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), height=300)
+                st.plotly_chart(fig, use_container_width=True)
 
-if analyze_btn and user_input:
-    with st.spinner("Calibrating Tier-7 Intelligence..."):
-        # 1. Prediction
-        score, label, segmentation = tox_engine.predict(user_input)
-        
-        # 2. Rephrasing (Dynamic)
-        rephrased = rephrase_engine.rephrase(user_input, score=score)
-        
-        # 3. Expert Benchmark (Using same logic as React App)
-        tier_data = rephrase_engine.get_tier_key(score)
-        benchmark = rephrase_engine.examples[tier_data]["output"]
-        
-        # 4. Save to DB
-        db = SessionLocal()
-        new_msg = Message(
-            user_input=user_input,
-            context="",
-            toxicity_score=score,
-            prediction_label=label,
-            rephrased_output=rephrased,
-            segmentation_scores=json.dumps(segmentation)
-        )
-        db.add(new_msg)
-        db.commit()
-        db.close()
-        
-        # Display Results
-        res_col1, res_col2 = st.columns([1, 1.5])
-        
-        with res_col1:
-            st.markdown("### Level Segmentation")
-            color = "red" if score > 0.6 else "green"
-            st.markdown(f"<div style='text-align: center; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px;'><strong>Toxicity Intensity</strong><h1 style='color: {color};'>{(score*100):.0f}%</h1></div>", unsafe_allow_all_html=True)
-            
-            # Radar Chart
-            radar_df = pd.DataFrame({
-                'Category': [k.replace('_', ' ').upper() for k in segmentation.keys()],
-                'Score': [v * 100 for v in segmentation.values()]
-            })
-            fig = px.line_polar(radar_df, r='Score', theta='Category', line_close=True)
-            fig.update_traces(fill='toself', line_color='#4f46e5')
-            st.plotly_chart(fig, use_container_width=True)
-
-        with res_col2:
-            st.markdown("### Restorative AI Output")
-            st.markdown(f"<div class='result-box'><strong>{rephrased}</strong></div>", unsafe_allow_all_html=True)
-            
-            st.markdown("### 📘 Expert Benchmark Rephrase")
-            st.markdown(f"<div class='expert-box'>\"{benchmark}\"</div>", unsafe_allow_all_html=True)
-            
-            st.success("Analysis Complete: Calibrated via Tier-7 Expert Severity Engine.")
-
-# Dashboard Section
-st.divider()
-if st.checkbox("Explore Detailed Analytics Dashboard", value=False):
-    st.markdown("## Data Insights Dashboard")
-    
-    if history:
-        df = pd.DataFrame([{
-            "timestamp": m.timestamp,
-            "score": m.score if hasattr(m, 'score') else m.toxicity_score, # Handle possible naming diff
-            "label": m.prediction_label
-        } for m in history])
-        
-        dash_col1, dash_col2 = st.columns(2)
-        
-        with dash_col1:
-            # 1. Global Sentiment Profile (Pie)
-            pie_data = df['label'].value_counts()
-            fig_pie = px.pie(values=pie_data.values, names=pie_data.index, title="Global Sentiment Profile", color_discrete_sequence=['#4f46e5', '#ef4444'])
-            st.plotly_chart(fig_pie, use_container_width=True)
-            
-            # 2. Average Severity Index Trend (Line)
-            df['date'] = pd.to_datetime(df['timestamp']).dt.date
-            line_data = df.groupby('date')['score'].mean().reset_index()
-            fig_line = px.line(line_data, x='date', y='score', title="Avg Severity Index Trend", markers=True)
-            fig_line.update_traces(line_color='#4f46e5')
-            st.plotly_chart(fig_line, use_container_width=True)
-            
-        with dash_col2:
-            # 3. Layered Toxicity Volume (Area)
-            df['hour'] = pd.to_datetime(df['timestamp']).dt.hour
-            area_data = df.groupby(['hour', 'label']).size().reset_index(name='count')
-            fig_area = px.area(area_data, x='hour', y='count', color='label', title="Layered Toxicity Volume", color_discrete_map={'Toxic': '#ef4444', 'Non-toxic': '#4f46e5'})
-            st.plotly_chart(fig_area, use_container_width=True)
-            
-            # 4. Segment Prevalence (Bar)
-            # Re-calculating segment averages from JSON
-            all_segs = []
-            for m in history:
-                try:
-                    s = json.loads(m.segmentation_scores)
-                    all_segs.append(s)
-                except: continue
-            
-            if all_segs:
-                seg_df = pd.DataFrame(all_segs).mean().reset_index()
-                seg_df.columns = ['Segment', 'Avg Score']
-                fig_bar = px.bar(seg_df, x='Segment', y='Avg Score', title="Segment Prevalence Hierarchy", color='Avg Score', color_continuous_scale='RdPu')
-                st.plotly_chart(fig_bar, use_container_width=True)
+            with r_col2:
+                st.markdown("### Restorative AI Calibration")
+                st.markdown(f"<div class='result-box'><strong>{rephrased}</strong></div>", unsafe_allow_all_html=True)
+                
+                st.markdown("### 📘 Expert Benchmark Standard")
+                st.markdown(f"<div class='expert-box'>\"{benchmark}\"</div>", unsafe_allow_all_html=True)
+                st.success("Calibration Successful: Tier-7 Expert Engine Active.")
     else:
-        st.info("No historical data available for dashboard visualization.")
+        st.warning("Please enter some feedback for the engine to analyze.")
+
+# Historical Analytics Suite
+st.divider()
+if st.checkbox("Toggle Historical Dashboard", value=False):
+    st.markdown("## Multi-Dimension Data Insights")
+    if history:
+        h_df = pd.DataFrame([{"timestamp": m.timestamp, "score": m.toxicity_score, "label": m.prediction_label} for m in history])
+        d_col1, d_col2 = st.columns(2)
+        
+        with d_col1:
+            # Global Sentiment
+            pie_val = h_df['label'].value_counts()
+            st.plotly_chart(px.pie(values=pie_val.values, names=pie_val.index, title="Global Sentiment Distribution", color_discrete_sequence=['#4f46e5', '#ef4444']), use_container_width=True)
+            
+            # Severity Trend
+            h_df['date'] = pd.to_datetime(h_df['timestamp']).dt.date
+            line_val = h_df.groupby('date')['score'].mean().reset_index()
+            st.plotly_chart(px.line(line_val, x='date', y='score', title="Avg Severity Index Trend", markers=True).update_traces(line_color='#4f46e5'), use_container_width=True)
+            
+        with d_col2:
+            # Hourly Volume
+            h_df['hour'] = pd.to_datetime(h_df['timestamp']).dt.hour
+            area_val = h_df.groupby(['hour', 'label']).size().reset_index(name='count')
+            st.plotly_chart(px.area(area_val, x='hour', y='count', color='label', title="Layered Toxicity Volume", color_discrete_map={'Toxic': '#ef4444', 'Non-toxic': '#4f46e5'}), use_container_width=True)
+            
+            # Segment Prevalence (Averaged from historical records)
+            try:
+                hist_seg = pd.DataFrame([json.loads(m.segmentation_scores) for m in history]).mean().reset_index()
+                hist_seg.columns = ['Metric', 'Avg']
+                st.plotly_chart(px.bar(hist_seg, x='Metric', y='Avg', title="Segment Prevalence Hierarchy", color='Avg', color_continuous_scale='RdPu'), use_container_width=True)
+            except Exception:
+                st.info("Insufficient segmentation history for full analysis.")
+    else:
+        st.info("No historical scan records available.")
 
 st.markdown("---")
-st.caption("7-Tier Analytical Engine v2.8 | Multi-Model Benchmark Verification | Powering Streamlit Cloud")
+st.caption("7-Tier Analytical Engine v2.8 | Intensity-Aware Calibration | Pro-Grade Visualization")
