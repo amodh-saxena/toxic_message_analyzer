@@ -1,6 +1,8 @@
 streamlit==1.40.1
 transformers
 torch
+torchvision
+scipy
 plotly
 pandas
 sqlalchemy

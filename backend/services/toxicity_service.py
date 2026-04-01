@@ -22,41 +22,59 @@ class ToxicityService:
             self.load_model()
             
         try:
-            results = self.pipeline(text)[0]
+            # Get the full raw output (List of Lists of Dicts)
+            raw_output = self.pipeline(text)
             
-            # Label-Agnostic Score Extraction (Defensive Coding)
-            # We look for labels like 'NEGATIVE', 'LABEL_0', or 'negative'
+            # --- Ultra-Defensive Extraction (Handles any cloud model format) ---
+            # 1. Drill down into the first list if it's there
+            if isinstance(raw_output, list) and len(raw_output) > 0:
+                results = raw_output[0]
+            else:
+                results = raw_output # Handles single-dict return
+            
             neg_score = 0.0
             pos_score = 0.0
             
-            for r in results:
-                label = r['label'].upper()
-                if label in ['NEGATIVE', 'LABEL_0', 'NEG']:
-                    neg_score = r['score']
-                elif label in ['POSITIVE', 'LABEL_1', 'POS']:
-                    pos_score = r['score']
+            # 2. Case: results is a list of score dictionaries (Standard)
+            if isinstance(results, list):
+                for item in results:
+                    if not isinstance(item, dict): continue
+                    
+                    label_u = str(item.get('label', '')).upper()
+                    val = float(item.get('score', 0.0))
+                    
+                    if label_u in ['NEGATIVE', 'LABEL_0', 'NEG', 'TOXIC']:
+                        neg_score = val
+                    elif label_u in ['POSITIVE', 'LABEL_1', 'POS', 'NON-TOXIC']:
+                        pos_score = val
             
-            # If for some reason the above failed to identify labels, we assume binary sentiment
-            if neg_score == 0.0 and pos_score == 0.0:
-                neg_score = results[0]['score'] # Fallback to first result
-            
+            # 3. Case: results is a single dictionary (Fail-safe)
+            elif isinstance(results, dict):
+                label_u = str(results.get('label', '')).upper()
+                val = float(results.get('score', 0.0))
+                if label_u in ['NEGATIVE', 'LABEL_0', 'NEG', 'TOXIC']:
+                    neg_score = val
+                else: # Assume single-label means non-toxic unless it's explicitly NEG
+                    pos_score = val
+
+            # --- Result Calculation ---
             toxicity_score = neg_score
             label = "Toxic" if toxicity_score > 0.6 else "Non-toxic"
             
-            # Replicating the 5-tier segmentation suite for UI parity
+            # Build segmentation and round to safe floats
             segmentation = {
-                "Hostility": toxicity_score * 0.9,
-                "Directness": neg_score * 0.8,
-                "Negativity": neg_score * 1.0,
-                "Context_Risk": toxicity_score * 0.7,
-                "Aggression": toxicity_score * 1.0
+                "Hostility": round(toxicity_score * 0.9, 4),
+                "Directness": round(neg_score * 0.8, 4),
+                "Negativity": round(neg_score * 1.0, 4),
+                "Context_Risk": round(toxicity_score * 0.7, 4),
+                "Aggression": round(toxicity_score * 1.0, 4)
             }
             
-            return toxicity_score, label, segmentation
+            return float(toxicity_score), label, segmentation
             
         except Exception as e:
-            print(f"PREDICTION ERROR: {e}")
-            # Safe fallback so UI never crashes
+            print(f"CRITICAL ERROR in Toxicity Engine: {e}")
+            # Final global fallback so UI never, ever crashes
             return 0.0, "Non-toxic", {"Hostility":0,"Directness":0,"Negativity":0,"Context_Risk":0,"Aggression":0}
 
 toxicity_analyzer = ToxicityService()
