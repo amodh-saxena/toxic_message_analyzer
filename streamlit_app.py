@@ -146,7 +146,7 @@ if st.button("Execute Intelligence Analysis"):
             with r_col1:
                 st.markdown("### Intensity Segmentation")
                 score_color = "#ef4444" if score > 0.6 else "#4f46e5"
-                st.markdown(f"<div style='text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white;'><strong>Toxicity Intensity</strong><h1 style='color: {score_color}; font-size: 3rem; margin: 0;'>{(score*100):.0f}%</h1></div>", unsafe_allow_all_html=True)
+                st.html(f"<div style='text-align: center; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; background: white;'><strong>Toxicity Intensity</strong><h1 style='color: {score_color}; font-size: 3rem; margin: 0;'>{(score*100):.0f}%</h1></div>")
                 
                 radar_data = pd.DataFrame({
                     'Metric': [k.replace('_', ' ').upper() for k in segmentation.keys()],
@@ -159,10 +159,10 @@ if st.button("Execute Intelligence Analysis"):
 
             with r_col2:
                 st.markdown("### Restorative AI Calibration")
-                st.markdown(f"<div class='result-box'><strong>{rephrased}</strong></div>", unsafe_allow_all_html=True)
+                st.html(f"<div class='result-box'><strong>{rephrased}</strong></div>")
                 
                 st.markdown("### 📘 Expert Benchmark Standard")
-                st.markdown(f"<div class='expert-box'>\"{benchmark}\"</div>", unsafe_allow_all_html=True)
+                st.html(f"<div class='expert-box'>\"{benchmark}\"</div>")
                 st.success("Calibration Successful: Tier-7 Expert Engine Active.")
     else:
         st.warning("Please enter some feedback for the engine to analyze.")
