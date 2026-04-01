@@ -65,7 +65,7 @@ CSS_THEME = """
     }
 </style>
 """
-st.markdown(CSS_THEME, unsafe_allow_all_html=True)
+st.html(CSS_THEME) # Modern, stable way to inject CSS on 1.40.1
 
 # Cache Models for Cloud Performance
 @st.cache_resource
