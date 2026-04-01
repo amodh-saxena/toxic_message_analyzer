@@ -2,8 +2,8 @@ from transformers import T5ForConditionalGeneration, T5Tokenizer
 import torch
 
 class RephraserService:
-    def __init__(self, model_name="t5-base"):
-        print(f"Loading professional rephraser model: {model_name}...")
+    def __init__(self, model_name="t5-small"):
+        print(f"Loading CLOUD-OPTIMIZED rephraser model: {model_name}...")
         self.tokenizer = T5Tokenizer.from_pretrained(model_name)
         self.model = T5ForConditionalGeneration.from_pretrained(model_name)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -56,7 +56,7 @@ class RephraserService:
         
         try:
             # Using the benchmark as a strong hint for the model
-            instruction = f"Instruction: Rephrase the input using the following professional standard as a guide: '{benchmark}'"
+            instruction = f"Instruction: Rephrase the input using the professional standard: '{benchmark}'"
 
             full_prompt = f"Task: {instruction} Input: {text}"
             if context:
